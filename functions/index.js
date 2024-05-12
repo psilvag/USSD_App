@@ -27,7 +27,9 @@ app.use(cors())
 app.use(bodyParser.urlencoded({extended:false}))
 
 //----------- APIuusd System-----------------
+
 const initSystemUssd=()=>{
+    
     app.post('/ussd',async (req,res)=>{
         let response=""
         const {
@@ -43,24 +45,27 @@ const initSystemUssd=()=>{
             2. Comprar megas
             3. Ver puntos acumulados
             4. Canjear puntos
+            5. Ver mi estado
             `
         }
+        //Opcion 1: Consulta de saldo
         else if(text=='1'){
             const data= await readInfo()
             const infoUserBalance=data.balance
             const infoUserMB=data.MB
-            response=`END Saldo: ${JSON.stringify(infoUserBalance)}Bs; MB:${JSON.stringify(infoUserMB)} MB.`
-          
-          
-            
+            response=`END 
+            Saldo:${JSON.stringify(infoUserBalance)}Bs; 
+            MB:${JSON.stringify(infoUserMB)} MB.`
         }
+
+        //Opcion 2: Comprar Megas
         else if(text=='2'){
             response=`CON **Megas**
             1. 300 MB x 2Bs acumula 25 pts
             2. 500 MB x 3Bs acumula 50 pts
             3. 800 MB x 5Bs acumula 80 pts
             4. 1.3 GB x 8Bs acumula 120pts
-            0. Volver`
+            `
             
         }
         else if(text=='2*1'){
@@ -79,44 +84,47 @@ const initSystemUssd=()=>{
             const data= await buyMegas(1300)
             response=`END ${JSON.stringify(data)}`
         }
-        else if(text=='2*0'){
-            response=`END SALIR EN ESPERA...`
-        }
+       
+        //Opcion 3: Ver puntos acumulados
         else if(text=='3'){
             const data= await readInfo()
             const infoUserPoints=data.points
-            response=`END Puntos:${JSON.stringify(infoUserPoints)} puntos acumulados`
+            response=`END 
+            Puntos:${JSON.stringify(infoUserPoints)} 
+            puntos acumulados`
         }
+
+        //Opcion 4: Canjear puntos
         else if(text=='4'){
             response=`CON **Canjear puntos**
             1. Canjearlo por Megas
             2. Canjearlo por minutos
-            0. Volver`
+            `
         }
         else if(text=='4*1'){
             const data= await readInfo()
             const infoUserPoints=data.points
-            response=`CON Tienes ${infoUserPoints} puntos
+            response=`CON Tienes 
+            ${infoUserPoints} puntos acumulados
             *****Cambialo por:*****
             1. 300MB por 450pts.
             2. 650MB por 750pts
             3. 1.3GB por 850pts 
-            0. Volver`
-
+            `
         }
         else if(text=='4*2'){
             const data= await readInfo()
             const infoUserPoints=data.points
-            response=`CON Tienes ${infoUserPoints} puntos
+            response=`CON Tienes 
+            ${infoUserPoints} puntos acumulados
             *****Cambialo por:*****
             1. 1min  por 300pts 
             2. 2min  por 600pts
             3. 4min  por 750pts
-            0. Volver`
+            `
         }
-        else if(text=='4*0'){
-            response=`END SALIR EN ESPERA...`
-        }
+       
+        // SUBMENU:Cambiar puntos por Megas
         else if(text=='4*1*1'){
             
           const data=await changeMegas(300)
@@ -133,6 +141,7 @@ const initSystemUssd=()=>{
          response=`END ${data}` 
         }
 
+        // SUBMENU:Cambiar puntos por Minutos
         else if(text=='4*2*1'){
          const data=await changeMinutes(1)
          response=`END ${data}` 
@@ -147,6 +156,17 @@ const initSystemUssd=()=>{
          const data=await changeMinutes(4)
          response=`END ${data}` 
 
+        }
+        
+        //Opcion 5: Estado general
+        else if(text=='5'){
+            const data=await infoUser()
+            response=`END Estado:
+            Saldo:${data.Saldo}Bs;
+            MB:${data.Megas}Megas; 
+            Pts:${data.Pts}Pts;
+            Mins:${data.Minutos}Min;
+            ` 
         }
 
         res.set('Content-Type: text/plain')
@@ -165,6 +185,17 @@ app.get('/',(req,res)=>{
 
 
 // ---------Functions for Ussd----------------
+ const infoUser=async()=>{
+    const data= await readInfo()
+    const generalDataUser={
+        Saldo:data.balance,
+        Pts:data.points,
+        Megas:data.MB,
+        Minutos:data.minutes
+        
+    }
+    return generalDataUser
+ }
  const readInfo= async ()=>{
     try{
         const collectionRef=collection(db,'ussdUser')
@@ -233,7 +264,7 @@ app.get('/',(req,res)=>{
     try{
         const collectionRef=collection(db,'ussdUser')
         await addDoc(collectionRef,currentDataUser)
-        return `Compra realizada correctamente MB: ${currentDataUser.MB}`
+        return `Compraste ${currentDataUser.MB} MB`
         
     }
     catch(error){
@@ -284,8 +315,8 @@ app.get('/',(req,res)=>{
         const collectionRef=collection(db,'ussdUser')
         await addDoc(collectionRef,currentDataUser)
         return `Canjeo realizado correctamente, 
-               MB:${currentDataUser.MB} 
-               Puntos:${currentDataUser.points}`
+               MB: ${currentDataUser.MB} 
+               Te quedan: ${currentDataUser.points} puntos`
         
     }
     catch(error){
@@ -336,8 +367,8 @@ app.get('/',(req,res)=>{
         const collectionRef=collection(db,'ussdUser')
         await addDoc(collectionRef,currentDataUser)
         return `Canjeo realizado correctamente, 
-               Minutos:${currentDataUser.minutes} 
-               Puntos:${currentDataUser.points}`
+               Sumaste +: ${minutesToChange} minutos 
+               Te quedan: ${currentDataUser.points} puntos`
         
     }
     catch(error){
@@ -346,13 +377,6 @@ app.get('/',(req,res)=>{
     }
 
 }
-
-
-
-
-
-
-
 
 //exports.app=functions.https.onRequest(app) //CommonJS
 export const ussdApp=https.onRequest(app)
