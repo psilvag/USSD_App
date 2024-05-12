@@ -88,18 +88,66 @@ const initSystemUssd=()=>{
             response=`END Puntos:${JSON.stringify(infoUserPoints)} puntos acumulados`
         }
         else if(text=='4'){
-            response=`CON EN ESPERA`
+            response=`CON **Canjear puntos**
+            1. Canjearlo por Megas
+            2. Canjearlo por minutos
+            0. Volver`
+        }
+        else if(text=='4*1'){
+            const data= await readInfo()
+            const infoUserPoints=data.points
+            response=`CON Tienes ${infoUserPoints} puntos
+            *****Cambialo por:*****
+            1. 300MB por 450pts.
+            2. 650MB por 750pts
+            3. 1.3GB por 850pts 
+            0. Volver`
+
+        }
+        else if(text=='4*2'){
+            const data= await readInfo()
+            const infoUserPoints=data.points
+            response=`CON Tienes ${infoUserPoints} puntos
+            *****Cambialo por:*****
+            1. 1min  por 300pts 
+            2. 2min  por 600pts
+            3. 4min  por 750pts
+            0. Volver`
+        }
+        else if(text=='4*0'){
+            response=`END SALIR EN ESPERA...`
+        }
+        else if(text=='4*1*1'){
+            
+          const data=await changeMegas(300)
+          response=`END ${data}`
+
+        }
+        else if(text=='4*1*2'){
+          const data=await changeMegas(650)
+          response=`END ${data}` 
+           
+        }
+        else if(text=='4*1*3'){
+         const data=await changeMegas(1300)
+         response=`END ${data}` 
         }
 
+        else if(text=='4*2*1'){
+         const data=await changeMinutes(1)
+         response=`END ${data}` 
+            
+        }
+        else if(text=='4*2*2'){
+         const data=await changeMinutes(2)
+         response=`END ${data}` 
 
+        }
+        else if(text=='4*2*3'){
+         const data=await changeMinutes(4)
+         response=`END ${data}` 
 
-
-
-
-
-
-
-
+        }
 
         res.set('Content-Type: text/plain')
         res.send(response)
@@ -179,17 +227,13 @@ app.get('/',(req,res)=>{
         balance:currentBalance,
         points:currentPoints,
         MB:currentMB,
-        minutes:1,
+        minutes:userInfo.minutes,
         timestamp:Timestamp.now()
     }
     try{
         const collectionRef=collection(db,'ussdUser')
         await addDoc(collectionRef,currentDataUser)
-        // if(docRef.id){
-        //     const docSnap = await getDoc(docRef)
-        //     const prop = docSnap.data();
-        //${prop.MB} Megas, sumaste ${prop.points} puntos
-        return `Compra realizada correctamente`
+        return `Compra realizada correctamente MB: ${currentDataUser.MB}`
         
     }
     catch(error){
@@ -200,14 +244,115 @@ app.get('/',(req,res)=>{
     
  }
 
+  const changeMegas=async(megasToChange)=>{
+    const userInfo=await readInfo()
+    let currentPoints,currentMB
+    const megasPoints={ // megas,points
+        300:450,
+        650:750,
+        1300:850
+    }
+
+    if(userInfo.points>0){
+        for(let megas of Object.keys(megasPoints)){
+           if(megasToChange.toString()===megas){
+            if(userInfo.points>=megasPoints[megas]){
+                currentMB=userInfo.MB+parseInt(megas)
+                currentPoints=userInfo.points-megasPoints[megas]
+                
+            }
+            else{
+                return 'Puntos insuficientes para el cambio'
+            }
+           }
+        }
+    }
+    else{
+        return 'No tienes puntos acumulados'
+    }
+    const currentDataUser={
+        name:"Pablo",
+        lastName:"Silva",
+        email:"pmarcelosilvag@gmail.com",
+        balance:userInfo.balance,
+        points:currentPoints,
+        MB:currentMB,
+        minutes:userInfo.minutes,
+        timestamp:Timestamp.now()
+    }
+    try{
+        const collectionRef=collection(db,'ussdUser')
+        await addDoc(collectionRef,currentDataUser)
+        return `Canjeo realizado correctamente, 
+               MB:${currentDataUser.MB} 
+               Puntos:${currentDataUser.points}`
+        
+    }
+    catch(error){
+        console.error('Error:',error);
+        throw error
+    }
+
+  }
+  
+  const changeMinutes=async(minutesToChange)=>{
+ 
+    const userInfo=await readInfo()
+    let currentPoints,currentMinutes
+    const minutesPoints={ // minutes,points
+        1:300,
+        2:600,
+        4:750
+    }
+
+    if(userInfo.points>0){
+        for(let minutes of Object.keys(minutesPoints)){
+           if(minutesToChange.toString()===minutes){
+            if(userInfo.points>=minutesPoints[minutes]){
+                currentMinutes=userInfo.minutes+parseInt(minutes)
+                currentPoints=userInfo.points-minutesPoints[minutes]
+                
+            }
+            else{
+                return 'Puntos insuficientes para el cambio'
+            }
+           }
+        }
+    }
+    else{
+        return 'No tienes puntos acumulados'
+    }
+    const currentDataUser={
+        name:"Pablo",
+        lastName:"Silva",
+        email:"pmarcelosilvag@gmail.com",
+        balance:userInfo.balance,
+        points:currentPoints,
+        MB:userInfo.MB,
+        minutes:currentMinutes,
+        timestamp:Timestamp.now()
+    }
+    try{
+        const collectionRef=collection(db,'ussdUser')
+        await addDoc(collectionRef,currentDataUser)
+        return `Canjeo realizado correctamente, 
+               Minutos:${currentDataUser.minutes} 
+               Puntos:${currentDataUser.points}`
+        
+    }
+    catch(error){
+        console.error('Error:',error);
+        throw error
+    }
+
+}
 
 
 
 
-//const port=7003
-// app.listen(port, () => {
-// console.log(`Server started on ${port}`)
-// })
+
+
+
 
 //exports.app=functions.https.onRequest(app) //CommonJS
 export const ussdApp=https.onRequest(app)
