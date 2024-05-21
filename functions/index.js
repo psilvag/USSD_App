@@ -1,11 +1,9 @@
-
+import { initializeApp } from "firebase/app";
+import { https } from "firebase-functions";
+import { addDoc, collection, getDoc, getDocs, getFirestore, limit, orderBy, query, Timestamp } from "firebase/firestore/lite";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { https } from "firebase-functions";
-
-import { initializeApp } from "firebase/app";
-import { addDoc, collection, getDoc, getDocs, getFirestore, limit, orderBy, query, Timestamp } from "firebase/firestore/lite";
 
 
 // ---------Firebase config-----------
@@ -17,8 +15,10 @@ const firebaseConfig = {
     messagingSenderId: "303646111656",
     appId: "1:303646111656:web:ed1534e972169290790f9d"
 }
+
 const fireBaseApp=initializeApp(firebaseConfig)
 const db=getFirestore(fireBaseApp)
+
 
 // -----------Express Server--------------
 const app=express()
@@ -27,6 +27,8 @@ app.use(cors())
 app.use(bodyParser.urlencoded({extended:false}))
 
 //----------- APIuusd System-----------------
+
+
 
 const initSystemUssd=()=>{
     
@@ -173,19 +175,24 @@ const initSystemUssd=()=>{
         res.send(response)
     })
 
+
+  
 }
 initSystemUssd()
 
 app.get('/',(req,res)=>{
     res.status(200).send({
         status:"Success",
-        message:"Server UssdApp started!"
+        message:"Server UssdApp started!",
+        status:'200 Ok'
     })
 })
 
 
+
+
 // ---------Functions for Ussd----------------
- const infoUser=async()=>{
+const infoUser=async()=>{
     const data= await readInfo()
     const generalDataUser={
         Saldo:data.balance,
@@ -195,8 +202,8 @@ app.get('/',(req,res)=>{
         
     }
     return generalDataUser
- }
- const readInfo= async ()=>{
+}
+const readInfo= async ()=>{
     try{
         const collectionRef=collection(db,'ussdUser')
         const documentsQuery=await getDocs(query(collectionRef,orderBy("timestamp","desc"),limit(1)))
@@ -220,10 +227,8 @@ app.get('/',(req,res)=>{
         throw error
     }
 
- }
-
-
- const buyMegas=async(amountMB)=>{
+}
+const buyMegas=async(amountMB)=>{
     const userInfo=await readInfo()
     let currentPoints,currentMB,currentBalance
 
@@ -273,9 +278,8 @@ app.get('/',(req,res)=>{
     }
 
     
- }
-
-  const changeMegas=async(megasToChange)=>{
+}
+const changeMegas=async(megasToChange)=>{
     const userInfo=await readInfo()
     let currentPoints,currentMB
     const megasPoints={ // megas,points
@@ -324,9 +328,8 @@ app.get('/',(req,res)=>{
         throw error
     }
 
-  }
-  
-  const changeMinutes=async(minutesToChange)=>{
+}
+const changeMinutes=async(minutesToChange)=>{
  
     const userInfo=await readInfo()
     let currentPoints,currentMinutes
@@ -380,3 +383,22 @@ app.get('/',(req,res)=>{
 
 //exports.app=functions.https.onRequest(app) //CommonJS
 export const ussdApp=https.onRequest(app)
+
+
+
+
+// app.get('/data',async (req,res)=>{
+//     try{
+  
+//         const collectionRef=collection(db,'ussdUser')
+//         const collection=await getDocs(query(collectionRef,orderBy('timestamp','desc')))
+//         const data=collection.docs.map(doc=>doc.data())
+//         res.status(200).send(data)
+//     }
+//     catch(error){
+//         res.status(400).send({
+//             message:error.message,
+//             error:error
+//         })
+//     }
+// })
